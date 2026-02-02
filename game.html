@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Run With My Heart 💖</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+     <link rel="stylesheet" href="styles/styles.css">
+  </head>
+
+  <body>
+    <div id="gameContainer">
+      <canvas id="game" width="800" height="340"></canvas>
+
+      <!-- Overlay stays inside HUD -->
+      <div id="hud">
+        <div class="overlay" id="overlay"></div>
+      </div>
+    </div>
+
+    <div class="header-container">
+        <!-- Heart counter outside -->
+    <div id="heartCounter" class="heart-counter">Hearts: 0 / 20</div>
+
+    <!-- Controls already outside -->
+    <div class="controls">
+      <button id="pauseBtn">
+        <img src="assets/pause.png" alt="Pause" />
+      </button>
+      <button id="resumeBtn" style="display: none">
+        <img src="assets/play-button.png" alt="Play" />
+      </button>
+      <button id="restartBtn">
+        <img src="assets/restart.png" alt="Restart" />
+      </button>
+    </div>
+
+    </div>
+
+    
+
+    
+
+    <script>
+      // ===== Redirect on refresh =====
+      if (performance.getEntriesByType("navigation")[0].type === "reload") {
+        window.location.href = "index.html";
+      }
+
+      // ===== Configuration =====
+      const theirName = "Yang";
+      const maxHearts = 20;
+      const maxHeartSpacing = 300;
+      const minHeartSpacing = 100;
+      const gravity = 0.6;
+      const baseSpeed = 4;
+      let speed = baseSpeed;
+
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+      const heartCounter = document.getElementById("heartCounter");
+
+      // ===== Audio =====
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      function playSound(freq, duration = 0.15, type = "sine") {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.value = 0.1;
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      }
+      const jumpSound = () => playSound(500, 0.12, "square");
+      const collectSound = () => playSound(800, 0.1, "triangle");
+      const winSound = () => {
+        playSound(600, 0.2);
+        setTimeout(() => playSound(800, 0.2), 200);
+        setTimeout(() => playSound(1000, 0.3), 400);
+      };
+
+      // ===== Game State =====
+      let gameState = "play",
+        loopId,
+        hearts = [],
+        collected = 0,
+        heartSpawner;
+
+      // ===== Player =====
+      const playerImg = new Image();
+      playerImg.src = "assets/easter-bunny.png";
+      const player = {
+        x: 60,
+        y: 180,
+        w: 32,
+        h: 32,
+        dy: 0,
+        jump() {
+          if (this.y >= 180) {
+            this.dy = -12;
+            jumpSound();
+          }
+        },
+        update() {
+          this.dy += gravity;
+          this.y += this.dy;
+          if (this.y > 180) {
+            this.y = 180;
+            this.dy = 0;
+          }
+        },
+        draw() {
+          if (playerImg.complete)
+            ctx.drawImage(playerImg, this.x, this.y, this.w, this.h);
+          else {
+            ctx.font = "32px serif";
+            ctx.fillText("💖", this.x, this.y + 30);
+          }
+        },
+      };
+
+      // ===== Spawn Hearts =====
+      function spawnHeart() {
+        if (collected + hearts.length >= maxHearts) return;
+        const rightMostX = hearts.length
+          ? Math.max(...hearts.map((h) => h.x))
+          : 0;
+        const spacing =
+          Math.floor(Math.random() * (maxHeartSpacing - minHeartSpacing + 1)) +
+          minHeartSpacing;
+        if (canvas.width - rightMostX >= spacing || hearts.length === 0) {
+          const yPos = Math.random() > 0.5 ? 150 : 120;
+          hearts.push({ x: canvas.width, y: yPos, w: 26, h: 26 });
+        }
+      }
+
+      // ===== Collision =====
+      function hit(a, b) {
+        return (
+          a.x < b.x + b.w &&
+          a.x + a.w > b.x &&
+          a.y < b.y + b.h &&
+          a.y + a.h > b.y
+        );
+      }
+
+      // ===== Controls =====
+      function handleJump() {
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        if (gameState === "play") player.jump();
+      }
+      document.addEventListener("keydown", (e) => {
+        if (e.code === "Space") handleJump();
+      });
+      document.addEventListener("mousedown", handleJump);
+      document.addEventListener(
+        "touchstart",
+        (e) => {
+          e.preventDefault();
+          handleJump();
+        },
+        { passive: false },
+      );
+
+      // ===== Game Loop =====
+      function loop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#ffb6c1";
+        ctx.fillRect(0, 220, canvas.width, 4);
+        if (gameState === "play") player.update();
+        player.draw();
+
+        for (let i = hearts.length - 1; i >= 0; i--) {
+          const h = hearts[i];
+          if (gameState === "play") h.x -= speed;
+          ctx.font = "26px serif";
+          ctx.fillText("❤️", h.x, h.y);
+          if (hit(player, h)) {
+            hearts.splice(i, 1);
+            collected++;
+            collectSound();
+          } else if (h.x + h.w < 0) {
+            gameOver();
+            return;
+          }
+        }
+
+        // Update HTML heart counter
+        heartCounter.textContent = `Hearts: ${collected} / ${maxHearts}`;
+
+        if (collected >= maxHearts && gameState === "play") win();
+        if (gameState === "play") loopId = requestAnimationFrame(loop);
+      }
+
+      // ===== Game States =====
+      function showOverlay(html) {
+        const overlay = document.getElementById("overlay");
+        overlay.innerHTML = html;
+        overlay.style.display = "block";
+      }
+      function gameOver() {
+        if (gameState !== "play") return;
+        gameState = "over";
+        cancelAnimationFrame(loopId);
+        stopHeartSpawner();
+        showOverlay(`💔 Oops! You missed a heart.<br>Try again, ${theirName}!`);
+        updateButtons();
+      }
+      function win() {
+        gameState = "win";
+        cancelAnimationFrame(loopId);
+        stopHeartSpawner();
+        winSound();
+        showOverlay(
+          `💘 ${theirName}, you collected all my hearts! 💘<br><br>Will you be my Valentine?`,
+        );
+        updateButtons();
+      }
+
+      // ===== Heart Spawner =====
+      function startHeartSpawner() {
+        stopHeartSpawner();
+        heartSpawner = setInterval(() => {
+          if (gameState === "play") spawnHeart();
+        }, 1000);
+      }
+      function stopHeartSpawner() {
+        if (heartSpawner) clearInterval(heartSpawner);
+      }
+
+      // ===== Restart =====
+      function restart() {
+        cancelAnimationFrame(loopId);
+        stopHeartSpawner();
+        hearts = [];
+        collected = 0;
+        player.y = 180;
+        player.dy = 0;
+        gameState = "play";
+        speed = baseSpeed;
+        document.getElementById("overlay").style.display = "none";
+        startHeartSpawner();
+        loop();
+      }
+
+      // ===== Buttons =====
+      const pauseBtn = document.getElementById("pauseBtn");
+      const resumeBtn = document.getElementById("resumeBtn");
+      const restartBtn = document.getElementById("restartBtn");
+
+      function updateButtons() {
+        if (gameState === "play") {
+          pauseBtn.style.display = "inline-block";
+          resumeBtn.style.display = "none";
+        } else if (gameState === "paused") {
+          pauseBtn.style.display = "none";
+          resumeBtn.style.display = "inline-block";
+        } else {
+          pauseBtn.style.display = "none";
+          resumeBtn.style.display = "none";
+        }
+      }
+
+      pauseBtn.onclick = () => {
+        if (gameState === "play") {
+          gameState = "paused";
+          cancelAnimationFrame(loopId);
+          updateButtons();
+        }
+      };
+      resumeBtn.onclick = () => {
+        if (gameState === "paused") {
+          gameState = "play";
+          loop();
+          updateButtons();
+        }
+      };
+      restartBtn.onclick = function () {
+        restart();
+        this.blur();
+      };
+      updateButtons();
+      startHeartSpawner();
+      loop();
+    </script>
+  </body>
+</html>

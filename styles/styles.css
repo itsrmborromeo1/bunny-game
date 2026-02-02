@@ -1,0 +1,175 @@
+* {
+  margin: 0;
+}
+
+body {
+  background: linear-gradient(#fff, #ffe4ec);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+  position: relative;
+}
+
+#gameContainer {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ===== Canvas ===== */
+canvas {
+  background: #ffffff;
+  border: 4px solid #ff6b9a;
+  border-radius: 10px;
+  display: block;
+  height: auto; /* maintain aspect ratio */
+}
+
+/* ===== HUD ===== */
+#hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.heart-counter {
+  position: absolute;
+  top: 20px;
+  left: 10px;
+  font-size: 1.5rem;
+  color: #ff6b9a;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-weight: bold;
+  pointer-events: auto;
+}
+
+.overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 18px;
+  background-color: #ffffff;
+  color: #ff6b9a;
+  padding: 40px;
+  border-radius: 10px;
+  display: none;
+  max-width: 90%;
+  width: auto;
+  max-height: 85%;
+  overflow-y: auto;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* ===== Controls ===== */
+.controls {
+  position: fixed; /* was absolute */
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
+  pointer-events: auto;
+  z-index: 1000; /* ensure it's above canvas */
+}
+.controls button {
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  width: 48px;
+  height: 48px;
+  background-color: #ffffff;
+}
+
+.controls button img {
+  width: auto;
+  height: 50%;
+  object-fit: contain;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+
+  canvas {
+    width: 85vw; /* canvas width scales with screen */
+    height: auto; /* maintains original aspect ratio */
+    max-width: 600px; /* optional cap for tablets */
+  }
+  .heart-counter {
+    font-size: 1rem;
+    padding: 1vw 2vw;
+    border-radius: 2vw;
+  }
+  .overlay {
+    font-size: 1rem;
+    padding: 4vw;
+    border-radius: 4vw;
+    max-width: 90%;
+  }
+  .controls {
+    top: 3vw;
+    right: 3vw;
+    gap: 3vw;
+  }
+  .controls button {
+    width: 12vw;
+    height: 12vw;
+    max-width: 48px;
+    max-height: 48px;
+  }
+}
+
+@media (max-width: 480px) {
+  canvas {
+    width: 85vw;
+    max-height: fit-content;
+  }
+  .heart-counter {
+    font-size: 1.125rem;
+    padding: 2vw 3vw;
+    border-radius: 3vw;
+  }
+  .overlay {
+    font-size: 0.75rem;
+    padding: 5vw;
+    border-radius: 5vw;
+    max-width: 95%;
+  }
+  .controls {
+    top: 4vw;
+    right: 4vw;
+    gap: 4vw;
+  }
+  .controls button {
+    width: 14vw;
+    height: 14vw;
+  }
+}
+
+@media (max-width: 360px) {
+  .heart-counter {
+    font-size: 0.75rem;
+    padding: 3vw 4vw;
+    border-radius: 4vw;
+  }
+  .overlay {
+    font-size: 6.5vw;
+    padding: 6vw;
+    border-radius: 6vw;
+    max-width: 95%;
+  }
+  .controls button {
+    width: 16vw;
+    height: 16vw;
+  }
+}
